@@ -1,0 +1,17 @@
+{
+  "name": "ssbu-import",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "tsc -p . && node ."
+  },
+  "main": "index.js",
+  "repository": "https://github.com/Hir0teru/ssbu-import.git",
+  "author": "hiroteru <78360123+HiraiDaiki@users.noreply.github.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "google-spreadsheet-as-promised": "^0.2.12"
+  }
+}
