@@ -14,17 +14,15 @@ type KeyCollection = {
 const doc: GoogleSpreadsheetType = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
 // スプレッドシートのヘッダーからkeyを作成する
-const extractKeys = (headers: string[]): string[] => {
+const createKeyCollection = (headers: string[], title: string): KeyCollection => {
   const keys: string[] = [];
+  const keyCollection : KeyCollection = {[title]: {}};
   headers.forEach((header) => {
-    const key: string = header.indexOf("−") === -1 ? header : header.substring(0, header.indexOf("−"));
-    if (keys.includes(key)) {
-      return;
-    } else {
-      keys.push(key);
-    }
+    const key: string = header.includes("−") ? header.substring(0, header.indexOf("−")) : header;
+    if (!keys.includes(key)) keys.push(key);
+    keyCollection[title][key] === undefined ? keyCollection[title][key] = [header] : keyCollection[title][key] = [...keyCollection[title][key], header]
   })
-  return keys;
+  return keyCollection;
 }
 
 (async (): Promise<void> => {
