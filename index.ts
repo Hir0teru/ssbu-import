@@ -5,6 +5,11 @@ import type {
   GoogleSpreadsheetRow
 } from 'google-spreadsheet';
 require('dotenv').config();
+type KeyCollection = {
+  [title: string]: {
+    [key: string]: string[]
+  };
+};
 
 const doc: GoogleSpreadsheetType = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
