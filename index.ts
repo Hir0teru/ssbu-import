@@ -28,6 +28,10 @@ type IdAndName = {
 
 type Fighter =  IdAndName | Frames;
 
+type Dictionary = {
+  [id: string] : Fighter
+};
+
 const doc: GoogleSpreadsheetType = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
 // スプレッドシートのヘッダーからkeyを作成する
@@ -93,6 +97,32 @@ const outputJSONFile = (path: string | undefined, jsonData: string): void => {
   console.log(e);
 });
 
+const createDictionary = (rows: GoogleSpreadsheetRow[], keyCollection: KeyCollection): Dictionary => {
+  const title: string = Object.keys(keyCollection)[0];
+  const keys: string[] = Object.keys(keyCollection[title]);
+  return rows.reduce((previousValue: Dictionary, row: GoogleSpreadsheetRow): Dictionary => {
+    const fighter: Fighter = {
+      ...keys.reduce((previousValue: IdAndName, key: string): IdAndName => {
+        return (key === 'name' || key === 'id') ? {...previousValue, ...{ [key]: row[key]}}: previousValue
+      }, {}),
+      [title]: {
+        ...keys.reduce((pr: {[move: string] : {[detail: string]: string}}, key: string): {[move: string] : {[detail: string]: string}} => {
+          if (key === 'name' || key === 'id') return pr;
+          const move: {[move: string] : {[detail: string]: string}} = {
+            [key]: {
+              ...keyCollection[title][key].reduce((pr: {[detail: string]: string}, detail: string): {[detail: string]: string} => {
+                return { ...pr, [detail.includes("−") ? detail.substring(detail.indexOf("−") + 1) : detail]: row[detail] };
+              }, {}),
+            }
+          }
+          return {...pr, ...move};
+        }, {}),
+      }
+    }
+    return {...previousValue, ...{[row.id]: fighter}}
+  }, {});
+}
+
 /* const makeDictionary = ((prop: string, entries: Fighter[]) => {
   const dictionary: {[key: string]: Fighter} = {};
   entries.forEach((entry: Fighter) => {
@@ -100,4 +130,25 @@ const outputJSONFile = (path: string | undefined, jsonData: string): void => {
     //dictionary[temp] = entry;
   })
 }); */
+
+const generateFrameData: Promise<void> = (async (): Promise<void> => {
+  await doc.useServiceAccountAuth(require('./credentials.json'));
+  await doc.loadInfo();
+  const sheetIds: string[] = ['434496018', '0', '458223600'];
+  let dictionary: Dictionary = {};
+  // arrayメソッド内で非同期処理を呼び出せないためfor文で記載
+  for (const sheetId of sheetIds) {
+    const frameSheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[sheetId];
+    const frameRows: GoogleSpreadsheetRow[] = await frameSheet.getRows();
+    const keyCollection: KeyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
+    // TODO:dicitionaryのマージ処理を修正する（現状は後発のオブジェクトにより上書きされている）
+    dictionary = {...createDictionary(frameRows, keyCollection), ...dictionary}
+  }
+  //console.log(dictionary)
+  outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
+})().catch(e => {
+  console.log(e);
+});
+
+generateFrameData;
 
