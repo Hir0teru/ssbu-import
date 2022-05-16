@@ -26,7 +26,7 @@ type IdAndName = {
   name?: string
 }
 
-type Fighter =  IdAndName & Frames;
+type Fighter =  IdAndName | Frames;
 
 const doc: GoogleSpreadsheetType = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
