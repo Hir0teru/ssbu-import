@@ -16,7 +16,7 @@ type KeyCollection = {
 type Frames = {
   [title: string]: {
     [move: string] : {
-      [data: string]: string
+      [detail: string]: string
     }
   }
 }
