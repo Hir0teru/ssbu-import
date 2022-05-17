@@ -46,6 +46,16 @@ const createKeyCollection = (headers: string[], title: string): KeyCollection =>
   return keyCollection;
 }
 
+// ファイター一覧作成
+const generateFightersAsJson = async(sheetsId: string): Promise<string> => {
+  const sheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[sheetsId];
+  const rows: GoogleSpreadsheetRow[] = await sheet.getRows();
+  let fighters: {[key: string]: string} = {};
+  rows.forEach((row: {[key: string]: string})=> {
+    fighters[row['id']] = row['name'];
+  })
+  return JSON.stringify({fighters});
+}
 // jsonファイルを出力する
 const outputJSONFile = (path: string | undefined, jsonData: string): void => {
   fs.writeFile(`${path}/import.json`, jsonData, function (err: any) {
