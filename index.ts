@@ -55,11 +55,17 @@ const generateFightersAsJson = async(sheetsId: string): Promise<string> => {
   }, {})
   return JSON.stringify({fighters});
 }
-  rows.forEach((row: {[key: string]: string})=> {
-    fighters[row['id']] = row['name'];
-  })
-  return JSON.stringify({fighters});
+
+// ファイターの翻訳ファイル作成
+const generateFightersi18AsJson = async(sheetsId: string, options: string): Promise<{[key: string]: string}> => {
+  const sheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[sheetsId];
+  const rows: GoogleSpreadsheetRow[] = await sheet.getRows();
+  const i18: {[key: string]: string} = rows.reduce((previousValue: {[key: string]: string}, row: GoogleSpreadsheetRow): {[key: string]: string} => {
+    return {...previousValue, ...{[row['name']]: row[options]}};
+  }, {});
+  return i18;
 }
+
 // jsonファイルを出力する
 const outputJSONFile = (path: string | undefined, jsonData: string): void => {
   fs.writeFile(`${path}/import.json`, jsonData, function (err: any) {
