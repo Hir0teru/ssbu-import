@@ -5,6 +5,7 @@ import type {
   GoogleSpreadsheet as GoogleSpreadsheetType,
   GoogleSpreadsheetRow
 } from 'google-spreadsheet';
+import merge from "ts-deepmerge";
 require('dotenv').config();
 
 type KeyCollection = {
@@ -161,10 +162,8 @@ const generateFrameData: Promise<void> = (async (): Promise<void> => {
     const frameSheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[sheetId];
     const frameRows: GoogleSpreadsheetRow[] = await frameSheet.getRows();
     const keyCollection: KeyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
-    // TODO:dicitionaryのマージ処理を修正する（現状は後発のオブジェクトにより上書きされている）
-    dictionary = {...createDictionary(frameRows, keyCollection), ...dictionary}
+    dictionary = merge(dictionary, createDictionary(frameRows, keyCollection));
   }
-  //console.log(dictionary)
   outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
 })().catch(e => {
   console.log(e);
