@@ -193,3 +193,10 @@ const generateSpecialFrameData: Promise<Dictionary> = (async (): Promise<Diction
   return {};
 });
 
+(async (): Promise<void> => {
+  const others: Dictionary = await generateFrameData;
+  const specials: Dictionary = await generateSpecialFrameData;
+  outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(merge(others, specials)));
+})().catch(e => {
+  console.log(e);
+});
