@@ -172,4 +172,24 @@ const generateFrameData: Promise<Dictionary> = (async (): Promise<Dictionary> =>
 });
 
 generateFrameData;
+// 必殺技のjsonファイル作成用
+// 必殺技は仕様の複雑さにより横必殺、上必殺、下必殺ごとにシートを作成している
+const generateSpecialFrameData: Promise<Dictionary> = (async (): Promise<Dictionary> => {
+  await doc.useServiceAccountAuth(require('./credentials.json'));
+  await doc.loadInfo();
+  // TODO:スプレッドシートのIdも環境変数化する
+  const sheetIds: string[] = ['357601440', '389944443', '1193956322'];
+  let dictionary: Dictionary = {};
+  // arrayメソッド内で非同期処理を呼び出せないためfor文で記載
+  for (const sheetId of sheetIds) {
+    const frameSheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[sheetId];
+    const frameRows: GoogleSpreadsheetRow[] = await frameSheet.getRows();
+    const keyCollection: KeyCollection = createKeyCollection(frameSheet.headerValues, 'Special');
+    dictionary = merge(dictionary, createDictionary(frameRows, keyCollection));
+  }
+  return dictionary;
+})().catch(e => {
+  console.log(e);
+  return {};
+});
 
