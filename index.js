@@ -27,9 +27,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const fs = __importStar(require("fs"));
+const ts_deepmerge_1 = __importDefault(require("ts-deepmerge"));
 require('dotenv').config();
 const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 // スプレッドシートのヘッダーからkeyを作成する
@@ -44,6 +48,24 @@ const createKeyCollection = (headers, title) => {
     });
     return keyCollection;
 };
+// ファイター一覧作成
+const generateFightersAsJson = (sheetsId) => __awaiter(void 0, void 0, void 0, function* () {
+    const sheet = yield doc.sheetsById[sheetsId];
+    const rows = yield sheet.getRows();
+    const fighters = rows.reduce((previousValue, row) => {
+        return Object.assign(Object.assign({}, previousValue), { [row.id]: row.name });
+    }, {});
+    return JSON.stringify({ fighters });
+});
+// ファイターの翻訳ファイル作成
+const generateFightersi18AsJson = (sheetsId, options) => __awaiter(void 0, void 0, void 0, function* () {
+    const sheet = yield doc.sheetsById[sheetsId];
+    const rows = yield sheet.getRows();
+    const i18 = rows.reduce((previousValue, row) => {
+        return Object.assign(Object.assign({}, previousValue), { [row['name']]: row[options] });
+    }, {});
+    return i18;
+});
 // jsonファイルを出力する
 const outputJSONFile = (path, jsonData) => {
     fs.writeFile(`${path}/import.json`, jsonData, function (err) {
@@ -52,53 +74,128 @@ const outputJSONFile = (path, jsonData) => {
         console.log('success');
     });
 };
-const makeDictionary = ((prop, entries) => {
-    const dictionary = {};
-    entries.forEach((entry) => {
-        //const temp: string = entry[prop]
-        //dictionary[temp] = entry;
-    });
-});
-(() => __awaiter(void 0, void 0, void 0, function* () {
+/*
+const ttt: Promise<void> = (async (): Promise<void> => {
+  await doc.useServiceAccountAuth(require('./credentials.json'));
+  await doc.loadInfo();
+  const test: string[] = ["0", "458223600", "1735187996", "951521899", "1246264536", "434496018", "762307127"];
+  let dictionary: {[id: string] : Fighter} = {};
+  for (const t of test) {
+    const frameSheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[t];
+    const frameRows: GoogleSpreadsheetRow[] = await frameSheet.getRows();
+    const keyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
+    const title: string = Object.keys(keyCollection)[0];
+    const keys: string[] = Object.keys(keyCollection[title]);
+    let fighters: Fighter[] = [];
+    frameRows.forEach((row: {[key: string]: string}) => {
+      const fighter: Fighter = {[title]: {}};
+      keys.forEach((key: string) => {
+        keyCollection[title][key].forEach((header) => {
+          if ((key === 'id') || (key === 'name')){
+            fighter[key] = row[header]
+          } else {
+            // 横スマッシュ-発生→発生のように文字列を編集してからkeyとする
+            fighter[title][key]= {...fighter[title][key], [header.includes("−") ? header.substring(header.indexOf("−") + 1) : header]: row[header] };
+          }
+        })
+      })
+      return fighter;
+    })
+    let dict: {[id: string] : Fighter} = {};
+    fighters.forEach((fighter: Fighter) => {
+      const d : {[id: string] : Fighter} = {};
+      if (fighter.id !== undefined) {
+        d[fighter.id] = fighter;
+      }
+      dict = {...dict, ...d};
+    })
+    const key: string[] = Object.keys(dict);
+    key.forEach((k) => {
+      dictionary[k] = {...dictionary[k], ...dict[k]}
+    })
+  }
+  outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
+  //const jsondata: string = await generateFightersAsJson('1848046085');
+  //outputJSONFile(process.env.JSON_FILE_PAHT, jsondata);
+  await generateFightersi18AsJson('1848046085', 'en')
+  await generateFightersi18AsJson('1848046085', 'ja')
+})().catch(e => {
+  console.log(e);
+}); */
+const createDictionary = (rows, keyCollection) => {
+    const title = Object.keys(keyCollection)[0];
+    const keys = Object.keys(keyCollection[title]);
+    return rows.reduce((previousValue, row) => {
+        const fighter = Object.assign(Object.assign({}, keys.reduce((previousValue, key) => {
+            return (key === 'name' || key === 'id') ? Object.assign(Object.assign({}, previousValue), { [key]: row[key] }) : previousValue;
+        }, {})), { [title]: Object.assign({}, keys.reduce((pr, key) => {
+                if (key === 'name' || key === 'id')
+                    return pr;
+                const move = {
+                    [key]: Object.assign({}, keyCollection[title][key].reduce((pr, detail) => {
+                        return Object.assign(Object.assign({}, pr), { [detail.includes("−") ? detail.substring(detail.indexOf("−") + 1) : detail]: row[detail] });
+                    }, {}))
+                };
+                return Object.assign(Object.assign({}, pr), move);
+            }, {})) });
+        return Object.assign(Object.assign({}, previousValue), { [row.id]: fighter });
+    }, {});
+};
+/* const makeDictionary = ((prop: string, entries: Fighter[]) => {
+  const dictionary: {[key: string]: Fighter} = {};
+  entries.forEach((entry: Fighter) => {
+    //const temp: string = entry[prop]
+    //dictionary[temp] = entry;
+  })
+}); */
+const generateFrameData = (() => __awaiter(void 0, void 0, void 0, function* () {
     yield doc.useServiceAccountAuth(require('./credentials.json'));
     yield doc.loadInfo();
-    const test = ["0", "762307127"];
+    // TODO:スプレッドシートのIdも環境変数化する
+    const sheetIds = ['434496018', '0', '458223600'];
     let dictionary = {};
-    for (const t of test) {
-        const frameSheet = yield doc.sheetsById[t];
+    // arrayメソッド内で非同期処理を呼び出せないためfor文で記載
+    for (const sheetId of sheetIds) {
+        const frameSheet = yield doc.sheetsById[sheetId];
         const frameRows = yield frameSheet.getRows();
         const keyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
-        const title = Object.keys(keyCollection)[0];
-        const keys = Object.keys(keyCollection[title]);
-        let fighters = [];
-        frameRows.forEach((row) => {
-            const fighter = { [title]: {} };
-            keys.forEach((key) => {
-                keyCollection[title][key].forEach((header) => {
-                    if ((key === 'id') || (key === 'name')) {
-                        fighter[key] = row[header];
-                    }
-                    else {
-                        // 横スマッシュ-発生→発生のように文字列を編集してからkeyとする
-                        fighter[title][key] = Object.assign(Object.assign({}, fighter[title][key]), { [header.includes("−") ? header.substring(header.indexOf("−") + 1) : header]: row[header] });
-                    }
-                });
-            });
-        });
-        let dict = {};
-        fighters.forEach((fighter) => {
-            const d = {};
-            if (fighter.id !== undefined) {
-                d[fighter.id] = fighter;
-            }
-            dict = Object.assign(Object.assign({}, dict), d);
-        });
-        const key = Object.keys(dict);
-        key.forEach((k) => {
-            dictionary[k] = Object.assign(Object.assign({}, dictionary[k]), dict[k]);
-        });
+        dictionary = (0, ts_deepmerge_1.default)(dictionary, createDictionary(frameRows, keyCollection));
     }
-    outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
+    return dictionary;
+}))().catch(e => {
+    console.log(e);
+    return {};
+});
+// 必殺技のjsonファイル作成用
+// 必殺技は仕様の複雑さにより横必殺、上必殺、下必殺ごとにシートを作成している
+const generateSpecialFrameData = (() => __awaiter(void 0, void 0, void 0, function* () {
+    yield doc.useServiceAccountAuth(require('./credentials.json'));
+    yield doc.loadInfo();
+    // TODO:スプレッドシートのIdも環境変数化する
+    const sheetIds = ['357601440', '389944443', '1193956322'];
+    let dictionary = {};
+    // arrayメソッド内で非同期処理を呼び出せないためfor文で記載
+    for (const sheetId of sheetIds) {
+        const frameSheet = yield doc.sheetsById[sheetId];
+        const frameRows = yield frameSheet.getRows();
+        const keyCollection = createKeyCollection(frameSheet.headerValues, 'Special');
+        dictionary = (0, ts_deepmerge_1.default)(dictionary, createDictionary(frameRows, keyCollection));
+    }
+    return dictionary;
+}))().catch(e => {
+    console.log(e);
+    return {};
+});
+(() => __awaiter(void 0, void 0, void 0, function* () {
+    const others = yield generateFrameData;
+    const specials = yield generateSpecialFrameData;
+    outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify((0, ts_deepmerge_1.default)(others, specials)));
+    /* await doc.useServiceAccountAuth(require('./credentials.json'));
+    await doc.loadInfo();
+    const hoge: string = await generateFightersAsJson('1848046085')
+    console.log(hoge)
+    const test = await generateFightersi18AsJson('1848046085', 'ja')
+    console.log(test) */
 }))().catch(e => {
     console.log(e);
 });
