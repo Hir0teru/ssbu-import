@@ -152,9 +152,10 @@ const createDictionary = (rows: GoogleSpreadsheetRow[], keyCollection: KeyCollec
   })
 }); */
 
-const generateFrameData: Promise<void> = (async (): Promise<void> => {
+const generateFrameData: Promise<Dictionary> = (async (): Promise<Dictionary> => {
   await doc.useServiceAccountAuth(require('./credentials.json'));
   await doc.loadInfo();
+  // TODO:スプレッドシートのIdも環境変数化する
   const sheetIds: string[] = ['434496018', '0', '458223600'];
   let dictionary: Dictionary = {};
   // arrayメソッド内で非同期処理を呼び出せないためfor文で記載
@@ -164,9 +165,10 @@ const generateFrameData: Promise<void> = (async (): Promise<void> => {
     const keyCollection: KeyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
     dictionary = merge(dictionary, createDictionary(frameRows, keyCollection));
   }
-  outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
+  return dictionary;
 })().catch(e => {
   console.log(e);
+  return {};
 });
 
 generateFrameData;
