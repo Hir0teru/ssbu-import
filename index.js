@@ -1,7 +1,11 @@
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -74,54 +78,6 @@ const outputJSONFile = (path, jsonData) => {
         console.log('success');
     });
 };
-/*
-const ttt: Promise<void> = (async (): Promise<void> => {
-  await doc.useServiceAccountAuth(require('./credentials.json'));
-  await doc.loadInfo();
-  const test: string[] = ["0", "458223600", "1735187996", "951521899", "1246264536", "434496018", "762307127"];
-  let dictionary: {[id: string] : Fighter} = {};
-  for (const t of test) {
-    const frameSheet: GoogleSpreadsheetWorksheetType = await doc.sheetsById[t];
-    const frameRows: GoogleSpreadsheetRow[] = await frameSheet.getRows();
-    const keyCollection = createKeyCollection(frameSheet.headerValues, frameSheet.title);
-    const title: string = Object.keys(keyCollection)[0];
-    const keys: string[] = Object.keys(keyCollection[title]);
-    let fighters: Fighter[] = [];
-    frameRows.forEach((row: {[key: string]: string}) => {
-      const fighter: Fighter = {[title]: {}};
-      keys.forEach((key: string) => {
-        keyCollection[title][key].forEach((header) => {
-          if ((key === 'id') || (key === 'name')){
-            fighter[key] = row[header]
-          } else {
-            // 横スマッシュ-発生→発生のように文字列を編集してからkeyとする
-            fighter[title][key]= {...fighter[title][key], [header.includes("−") ? header.substring(header.indexOf("−") + 1) : header]: row[header] };
-          }
-        })
-      })
-      return fighter;
-    })
-    let dict: {[id: string] : Fighter} = {};
-    fighters.forEach((fighter: Fighter) => {
-      const d : {[id: string] : Fighter} = {};
-      if (fighter.id !== undefined) {
-        d[fighter.id] = fighter;
-      }
-      dict = {...dict, ...d};
-    })
-    const key: string[] = Object.keys(dict);
-    key.forEach((k) => {
-      dictionary[k] = {...dictionary[k], ...dict[k]}
-    })
-  }
-  outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify(dictionary));
-  //const jsondata: string = await generateFightersAsJson('1848046085');
-  //outputJSONFile(process.env.JSON_FILE_PAHT, jsondata);
-  await generateFightersi18AsJson('1848046085', 'en')
-  await generateFightersi18AsJson('1848046085', 'ja')
-})().catch(e => {
-  console.log(e);
-}); */
 const createDictionary = (rows, keyCollection) => {
     const title = Object.keys(keyCollection)[0];
     const keys = Object.keys(keyCollection[title]);
@@ -141,13 +97,6 @@ const createDictionary = (rows, keyCollection) => {
         return Object.assign(Object.assign({}, previousValue), { [row.id]: fighter });
     }, {});
 };
-/* const makeDictionary = ((prop: string, entries: Fighter[]) => {
-  const dictionary: {[key: string]: Fighter} = {};
-  entries.forEach((entry: Fighter) => {
-    //const temp: string = entry[prop]
-    //dictionary[temp] = entry;
-  })
-}); */
 const generateFrameData = (() => __awaiter(void 0, void 0, void 0, function* () {
     yield doc.useServiceAccountAuth(require('./credentials.json'));
     yield doc.loadInfo();
@@ -190,12 +139,6 @@ const generateSpecialFrameData = (() => __awaiter(void 0, void 0, void 0, functi
     const others = yield generateFrameData;
     const specials = yield generateSpecialFrameData;
     outputJSONFile(process.env.JSON_FILE_PAHT, JSON.stringify((0, ts_deepmerge_1.default)(others, specials)));
-    /* await doc.useServiceAccountAuth(require('./credentials.json'));
-    await doc.loadInfo();
-    const hoge: string = await generateFightersAsJson('1848046085')
-    console.log(hoge)
-    const test = await generateFightersi18AsJson('1848046085', 'ja')
-    console.log(test) */
 }))().catch(e => {
     console.log(e);
 });
