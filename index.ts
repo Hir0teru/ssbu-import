@@ -69,7 +69,7 @@ const generateFightersi18AsJson = async(sheetsId: string, options: string): Prom
 
 // jsonファイルを出力する
 const outputJSONFile = (path: string | undefined, jsonData: string): void => {
-  fs.writeFile(`${path}/import.json`, jsonData, function (err: any) {
+  fs.writeFile(`${path}/import.json`, jsonData, function (err: NodeJS.ErrnoException | null) {
     if (err) throw err;
     console.log('success');
   });
